@@ -1,6 +1,22 @@
 class Dungeon
   attr_accessor :player
 
+  def play
+    puts "Please enter a command"
+    input = gets.chomp.downcase.to_sym
+    self.go(input) if valid_move?(input)
+    play
+  end
+
+  def valid_move?(input)
+    if self.find_room_in_direction(input) == nil
+      puts "You cannot go that way"
+      return false
+    end
+    true
+  end
+
+
   def start(location)
     @player.location = location
     show_current_description
@@ -48,7 +64,7 @@ class Room
   attr_accessor :reference, :name, :description, :connections
 
   def full_description
-      + ' you are in ' + @description
+      @name + "\nYou are in " + @description
   end
 
   def initialize(reference, name, description, connections)
