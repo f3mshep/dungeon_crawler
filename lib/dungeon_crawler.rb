@@ -1,11 +1,48 @@
+
+
 class Dungeon
   attr_accessor :player
 
+  DIRECTIONS = [:north, :south, :east, :west]
+  PLAYER_ACTIONS = [DIRECTIONS, :take, :help, :use, :fight, :status, :look]
+
+
+
+  def game_over
+    puts "Game over"
+    exit
+  end
+
   def play
+    game_over unless @player.alive?
     puts "Please enter a command"
     input = gets.chomp.downcase.to_sym
-    self.go(input) if valid_move?(input)
+    actions(input)
     play
+  end
+
+  def actions(input)
+    case input
+    when :north, :south, :east, :west
+      go(input)
+    when :help
+      puts PLAYER_ACTIONS
+    when :take
+      puts "this feature isn't implemented yet, buttmunch"
+    when :use
+      puts "not working yet"
+    when :fight
+      puts "oh yeah?"
+    when :quit, :exit
+      puts "Exiting game"
+      exit
+    when :status
+      puts "You are at a healthy #{@player.health}"
+    when :look
+      show_current_description
+    else
+      puts "I did not understand that. Please enter a valid command"
+    end
   end
 
   def valid_move?(input)
@@ -38,6 +75,9 @@ class Dungeon
     puts "You go " + direction.to_s
     @player.location = find_room_in_direction(direction)
     show_current_description
+    if @player.location == :doom_room
+      @player.health -= 100
+    end
   end
 
   def initialize(player)
@@ -52,10 +92,18 @@ class Dungeon
 end
 
 class Player
-  attr_accessor :name, :location
+  attr_accessor :name, :location, :health
+  max_health = 100
+
+  def alive?
+    return true if health > 0
+  end
+
+  @inventory = []
 
   def initialize(player_name)
     @name = player_name
+    @health = 100
   end
 
 end
