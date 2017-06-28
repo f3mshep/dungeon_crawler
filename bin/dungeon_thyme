@@ -23,6 +23,8 @@ my_dungeon.add_room(:torture_chamber, "Torture Chamber", "a dimly lit chamber. P
 
 my_dungeon.add_room(:doom_room, "Booby Trapped Room", "a cramped, narrow hallway. As you enter, you step on a pressure plate and thousands of arrows pierce your body.", {})
 
+my_dungeon.add_item(:plot_armor, "Plot Armor", "Shiny and perfect plot armor", :smallcave)
+
 puts "You find yourself in a cave."
 puts "Rocks block the way you came in."
 

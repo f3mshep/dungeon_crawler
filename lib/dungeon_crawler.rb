@@ -4,7 +4,7 @@ class Dungeon
   attr_accessor :player
 
   DIRECTIONS = [:north, :south, :east, :west]
-  PLAYER_ACTIONS = [DIRECTIONS, :take, :help, :use, :fight, :status, :look]
+  PLAYER_ACTIONS = [DIRECTIONS, :take, :help, :use, :fight, :status, :look, :inventory, :drop]
 
 
 
@@ -24,11 +24,17 @@ class Dungeon
   def actions(input)
     case input
     when :north, :south, :east, :west
-      go(input)
+      if valid_move?(input)
+        go(input)
+      end
     when :help
       puts PLAYER_ACTIONS
     when :take
-      puts "this feature isn't implemented yet, buttmunch"
+      take_item
+    when :inventory
+      show_inventory
+    when :drop
+      drop_item
     when :use
       puts "not working yet"
     when :fight
@@ -37,7 +43,7 @@ class Dungeon
       puts "Exiting game"
       exit
     when :status
-      puts "You are at a healthy #{@player.health}"
+      puts "You are at a healthy #{@player.healh} hitpoints"
     when :look
       show_current_description
     else
@@ -59,12 +65,23 @@ class Dungeon
     show_current_description
   end
 
+  def room_contents
+    find_room_in_dungeon(@player.location).contents
+  end
+
   def show_current_description
     puts find_room_in_dungeon(@player.location).full_description
+    unless room_contents.empty?
+      room_contents.each {|item| puts find_item_in_dungeon(item).view_description }
+    end
   end
 
   def find_room_in_dungeon(reference)
     @rooms[reference]
+  end
+
+  def find_item_in_dungeon(reference)
+    @items[reference]
   end
 
   def find_room_in_direction(direction)
@@ -83,6 +100,44 @@ class Dungeon
   def initialize(player)
     @player = player
     @rooms = Hash.new
+    @items = Hash.new
+  end
+
+  def take_item
+    puts "What item do you want to take?"
+    room_contents.each {|item| puts find_item_in_dungeon(item).name}
+    input = gets.chomp.downcase.tr(" ", "_").to_sym
+    chosen_item = room_contents.select { |e| e == input  }
+    if chosen_item.empty?
+      puts "There are none of those in here"
+    else
+      puts "You grabbed the #{find_item_in_dungeon(chosen_item[0]).name}"
+      @player.inventory << chosen_item[0]
+      room_contents.delete(chosen_item[0])
+    end
+  end
+
+  def show_inventory
+    @player.inventory.each {|item| puts find_item_in_dungeon(item).name}
+  end
+
+  def drop_item
+    puts "What item do you want to drop?"
+    show_inventory
+    input = gets.chomp.downcase.tr(" ", "_").to_sym
+    chosen_item = @player.inventory.select {|item| item == input}
+    if chosen_item.empty?
+      puts "You don't have any of that!"
+    else
+      puts "Dropped #{find_item_in_dungeon(chosen_item[0]).name}"
+      @player.inventory.delete(chosen_item[0])
+      find_room_in_dungeon(@player.location).contents << chosen_item[0]
+    end
+  end
+
+  def add_item(reference, name, description, location)
+    @items[reference] = Item.new(reference, name, description)
+    find_room_in_dungeon(location).contents << reference
   end
 
   def add_room(reference, name, description, connections)
@@ -91,25 +146,54 @@ class Dungeon
 
 end
 
+class Item
+  attr_accessor :name, :location, :reference
+
+  def initialize(reference, name, description)
+    @reference = reference
+    @name = name
+    @description = description
+  end
+
+  def view_description
+    puts @description
+  end
+
+end
+
 class Player
-  attr_accessor :name, :location, :health
+  attr_accessor :name, :location, :health, :inventory
   max_health = 100
 
   def alive?
     return true if health > 0
   end
 
-  @inventory = []
+
 
   def initialize(player_name)
     @name = player_name
     @health = 100
+    @inventory = []
   end
 
 end
 
+class Event
+
+  def initialize(name, location, description)
+  end
+
+end
+
+class Flag
+
+
+
+end
+
 class Room
-  attr_accessor :reference, :name, :description, :connections
+  attr_accessor :reference, :name, :description, :connections, :contents
 
   def full_description
       @name + "\nYou are in " + @description
@@ -120,6 +204,7 @@ class Room
     @name = name
     @description = description
     @connections = connections
+    @contents = []
   end
 
 end
