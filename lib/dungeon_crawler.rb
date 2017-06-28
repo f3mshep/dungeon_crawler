@@ -35,7 +35,7 @@ class Dungeon
     when :drop
       drop_item
     when :use
-      puts "not working yet"
+      use_item
     when :fight
       puts "oh yeah?"
     when :quit, :exit
@@ -76,6 +76,7 @@ class Dungeon
     puts find_room_in_dungeon(@player.location).full_description
     unless room_contents.empty?
       room_contents.each {|item| puts find_item_in_dungeon(item).view_description unless find_item_in_dungeon(item) == nil }
+      room_contents.each {|item| puts find_room_object_in_dungeon(item).view_description unless find_room_object_in_dungeon(item) == nil}
     end
   end
 
@@ -153,14 +154,19 @@ class Dungeon
   end
 
   def use_item
+    contents = room_contents.each {|object| puts find_room_object_in_dungeon(object).name}
+    if contents.empty?
+      puts "There are no usuable items in here"
+      return
     puts "What do you want to use?"
-    room_contents.each {|object| puts find_room_object_in_dungeon(object).name}
+    end 
     input = gets.chomp.downcase.tr(" ", "_").to_sym
     chosen_item = room_contents.select { |object| object == input  }
     if chosen_item.empty?
       puts "There are none of those in here"
     else
-      puts "You can't use that"
+
+      trigger(find_room_object_in_dungeon(chosen_item[0]).actions)
     end
   end
 
@@ -187,14 +193,16 @@ class Dungeon
     @rooms[reference] = Room.new(reference, name, description, connections)
   end
 
-  def add_room_object(reference, name, description, location)
-    @room_objects[reference] = RoomObject.new(reference, name, description)
+  def add_room_object(reference, name, description, location, actions)
+    @room_objects[reference] = RoomObject.new(reference, name, description, location, actions)
     find_room_in_dungeon(location).contents << reference
   end
 
   def add_event(name, location, description, block)
     @events[name] = Event.new(name, location, description, block)
-    find_room_in_dungeon(location).contents << name
+    if find_room_in_dungeon(location)
+      find_room_in_dungeon(location).contents << name
+    end 
   end
 
   def add_flag(name, value)
@@ -265,6 +273,16 @@ class Flag
 end
 
 class RoomObject < Item
+  attr_accessor :name, :location, :reference, :actions
+ 
+
+  def initialize(reference, name, description, location, actions)
+    @reference = reference
+    @name = name
+    @description = description
+    @location = location
+    @actions = actions
+  end
 end
 
 class Room

@@ -16,8 +16,8 @@ puts "\nWelcome, #{input}. Generating Dungeon now!"
 my_dungeon = Dungeon.new(player)
 
 arrow_shooty = Proc.new do
-  if my_dungeon.player_has?(:plot_armor)
-    puts "The arrows bounce off your shiny plot armor harmlessly"
+  if my_dungeon.player_has?(:mighty_shield)
+    puts "Your shield emits a pale glow and the arrows turn into roses in mid-air, which strike you in a (mostly) harmless manner"
   else
     puts "Thousands of arrows pierce your body. Your death is a painful one."
     my_dungeon.change_health(-999)
@@ -26,6 +26,7 @@ end
 
 rocks_opening = Proc.new do
   puts "There is a great rumbling sound behind you. Something huge must have shifted!"
+  my_dungeon.add_room_object(:switch, "Switch", "A rusty switch that has been engaged", :switch_room, :no_budge)
   my_dungeon.add_room(:largecave, "Large Cave", "a large cavernous cave. The rocks blocking the entrance are no more. You see an exit to the EAST. You see a point of light WEST of you. ", { :west => :smallcave, :east => :victory })
 end
 
@@ -49,13 +50,17 @@ my_dungeon.add_room(:tunnel, "Tunnel", "a tunnel that was painstakingly carved o
 
 my_dungeon.add_room(:switch_room, "Antechamber", "a large  antechamber. Grand stone pillars line the wall. A throne of crudely welded together thorns lies at the end. The tunnel lies SOUTH of here.", {:south => :tunnel})
 
-my_dungeon.add_item(:plot_armor, "Plot Armor", "Shiny and perfect plot armor", :smallcave)
+my_dungeon.add_item(:mighty_shield, "Mighty Shield", "You spy a shield lying against the wall", :smallcave)
 
-my_dungeon.add_item(:trusty_sword, "Trusty Sword", "You are no swordsmith, but even you can tell this is a majestical blade.", :west_jail)
+my_dungeon.add_item(:trusty_sword, "Trusty Sword", "You see a brilliant blade lying amid the bones", :east_jail)
 
 my_dungeon.add_event(:arrows_in_doom_room, :doom_room, "As you enter, you step on a pressure plate. Arrows shoot out from hidden holes in the wall!", arrow_shooty)
 
-my_dungeon.add_event(:rocks_shift, :switch_room,"You press a switch you find on the ground.", rocks_opening)
+my_dungeon.add_event(:rocks_shift, :switch,"You give the lever a massive heave, and you hear a strangely satisfying click.", rocks_opening)
+
+my_dungeon.add_event(:no_budge, :switch, "The switch appears to be firmly stuck into its new position", Proc.new {puts "You can't get it to budge!"})
+
+my_dungeon.add_room_object(:switch, "Switch", "There is an old, rusty lever next to the throne", :switch_room, :rocks_shift)
 
 my_dungeon.add_event(:winning, :victory, "Congratulations", Proc.new {exit})
 
