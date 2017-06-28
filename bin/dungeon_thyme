@@ -15,15 +15,49 @@ puts "\nWelcome, #{input}. Generating Dungeon now!"
 
 my_dungeon = Dungeon.new(player)
 
+arrow_shooty = Proc.new do
+  if my_dungeon.player_has?(:plot_armor)
+    puts "The arrows bounce off your shiny plot armor harmlessly"
+  else
+    puts "Thousands of arrows pierce your body. Your death is a painful one."
+    my_dungeon.change_health(-999)
+  end
+end
+
+rocks_opening = Proc.new do
+  puts "There is a great rumbling sound behind you. Something huge must have shifted!"
+  my_dungeon.add_room(:largecave, "Large Cave", "a large cavernous cave. The rocks blocking the entrance are no more. You see an exit to the EAST. You see a point of light WEST of you. ", { :west => :smallcave, :east => :victory })
+end
+
+my_dungeon.add_room(:victory, "Victory!", "a state of supreme glee!! You made it out of the cave/dungeon/trope!!! A WINNER IS YOU!", {})
+
 my_dungeon.add_room(:largecave, "Large Cave", "a large cavernous cave. The entrance is freshly caved in. You see a point of light WEST of you. ", { :west => :smallcave })
 
 my_dungeon.add_room(:smallcave, "Small Cave", "a small, claustrophobic cave. There is an opening to the large cave EAST of you. You can make something out to the NORTH.", { :east => :largecave, :north => :torture_chamber })
 
 my_dungeon.add_room(:torture_chamber, "Torture Chamber", "a dimly lit chamber. People were tortured here. It is vaguely smelly in here. To the SOUTH is the small cave. You can make out a narrow crevice to the NORTH", {:south => :smallcave, :north => :doom_room} )
 
-my_dungeon.add_room(:doom_room, "Booby Trapped Room", "a cramped, narrow hallway. As you enter, you step on a pressure plate and thousands of arrows pierce your body.", {})
+my_dungeon.add_room(:doom_room, "Booby Trapped Room", "a cramped, narrow hallway. The hallway continues to the NORTH, and the Torture Chamber is SOUTH." , {:south => :torture_chamber, :north => :jail_entrance})
+
+my_dungeon.add_room(:jail_entrance, "Jail Entrance", "a grimy chamber filled with dilapidated masonry. You can see corridors leading off to the EAST and WEST. The booby-trapped room is SOUTH of here.", {:east => :east_jail, :west => :west_jail, :south => :doom_room})
+
+my_dungeon.add_room(:east_jail, "East Jail", "a ancient hallway filled with jail cells. One of the cells has a pile of bones that looks disturbingly human. The jail entrance lies to the WEST.", {:west => :jail_entrance})
+
+my_dungeon.add_room(:west_jail, "West Jail", "a single cell lies in this room. You can see what looks like a hole in the wall of the cell leading NORTH. The entrance to the jail is EAST.", {:north => :tunnel, :east => :jail_entrance})
+
+my_dungeon.add_room(:tunnel, "Tunnel", "a tunnel that was painstakingly carved out of the stone and earth itself. As you crawl through the tunnel, you see a light to the NORTH. SOUTH leads to the single jail cell.", {:north => :switch_room, :south => :west_jail})
+
+my_dungeon.add_room(:switch_room, "Antechamber", "a large  antechamber. Grand stone pillars line the wall. A throne of crudely welded together thorns lies at the end. The tunnel lies SOUTH of here.", {:south => :tunnel})
 
 my_dungeon.add_item(:plot_armor, "Plot Armor", "Shiny and perfect plot armor", :smallcave)
+
+my_dungeon.add_item(:trusty_sword, "Trusty Sword", "You are no swordsmith, but even you can tell this is a majestical blade.", :west_jail)
+
+my_dungeon.add_event(:arrows_in_doom_room, :doom_room, "As you enter, you step on a pressure plate. Arrows shoot out from hidden holes in the wall!", arrow_shooty)
+
+my_dungeon.add_event(:rocks_shift, :switch_room,"You press a switch you find on the ground.", rocks_opening)
+
+my_dungeon.add_event(:winning, :victory, "Congratulations", Proc.new {exit})
 
 puts "You find yourself in a cave."
 puts "Rocks block the way you came in."
