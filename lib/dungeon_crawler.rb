@@ -7,7 +7,6 @@ class Dungeon
   PLAYER_ACTIONS = [DIRECTIONS, :take, :help, :use, :fight, :status, :look, :inventory, :drop]
 
 
-
   def game_over
     puts "Game over"
     exit
@@ -43,12 +42,16 @@ class Dungeon
       puts "Exiting game"
       exit
     when :status
-      puts "You are at a healthy #{@player.healh} hitpoints"
+      puts "You are at a healthy #{@player.health} hitpoints"
     when :look
       show_current_description
     else
       puts "I did not understand that. Please enter a valid command"
     end
+  end
+
+  def player_has?(item)
+    @player.inventory.include?(item)
   end
 
   def valid_move?(input)
@@ -72,16 +75,43 @@ class Dungeon
   def show_current_description
     puts find_room_in_dungeon(@player.location).full_description
     unless room_contents.empty?
-      room_contents.each {|item| puts find_item_in_dungeon(item).view_description }
+      room_contents.each {|item| puts find_item_in_dungeon(item).view_description unless find_item_in_dungeon(item) == nil }
     end
+  end
+
+  def room_events
+    room_contents.each do |event|
+      unless find_event_in_dungeon(event) == nil
+        trigger(event)
+      end
+    end
+  end
+
+
+
+  def trigger(event)
+    puts find_event_in_dungeon(event).view_description
+    find_event_in_dungeon(event).block.call
+  end
+
+  def change_health(int)
+    @player.health += int
   end
 
   def find_room_in_dungeon(reference)
     @rooms[reference]
   end
 
+  def find_event_in_dungeon(name)
+    @events[name]
+  end
+
   def find_item_in_dungeon(reference)
     @items[reference]
+  end
+
+  def find_room_object_in_dungeon(reference)
+    @room_objects[reference]
   end
 
   def find_room_in_direction(direction)
@@ -92,15 +122,16 @@ class Dungeon
     puts "You go " + direction.to_s
     @player.location = find_room_in_direction(direction)
     show_current_description
-    if @player.location == :doom_room
-      @player.health -= 100
-    end
+    room_events
   end
 
   def initialize(player)
     @player = player
     @rooms = Hash.new
     @items = Hash.new
+    @events = Hash.new
+    @flags = Hash.new
+    @room_objects = Hash.new
   end
 
   def take_item
@@ -119,6 +150,18 @@ class Dungeon
 
   def show_inventory
     @player.inventory.each {|item| puts find_item_in_dungeon(item).name}
+  end
+
+  def use_item
+    puts "What do you want to use?"
+    room_contents.each {|object| puts find_room_object_in_dungeon(object).name}
+    input = gets.chomp.downcase.tr(" ", "_").to_sym
+    chosen_item = room_contents.select { |object| object == input  }
+    if chosen_item.empty?
+      puts "There are none of those in here"
+    else
+      puts "You can't use that"
+    end
   end
 
   def drop_item
@@ -142,6 +185,21 @@ class Dungeon
 
   def add_room(reference, name, description, connections)
     @rooms[reference] = Room.new(reference, name, description, connections)
+  end
+
+  def add_room_object(reference, name, description, location)
+    @room_objects[reference] = RoomObject.new(reference, name, description)
+    find_room_in_dungeon(location).contents << reference
+  end
+
+  def add_event(name, location, description, block)
+    @events[name] = Event.new(name, location, description, block)
+    find_room_in_dungeon(location).contents << name
+  end
+
+  def add_flag(name, value)
+    @name = name
+    @value = value
   end
 
 end
@@ -180,16 +238,33 @@ class Player
 end
 
 class Event
+  attr_accessor :name, :location, :description
+  attr_reader :block
 
-  def initialize(name, location, description)
+  def view_description
+    puts @description
+  end
+
+  def initialize(name, location, description, block)
+    @name = name
+    @location = location
+    @description = description
+    @block = block
   end
 
 end
 
 class Flag
+  attr_accessor :name, :value
 
+  def initialize(name, value)
+    @name = name
+    @value = value
+  end
 
+end
 
+class RoomObject < Item
 end
 
 class Room
