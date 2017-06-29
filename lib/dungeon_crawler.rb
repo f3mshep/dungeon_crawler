@@ -75,15 +75,25 @@ class Dungeon
   def show_current_description
     puts find_room_in_dungeon(@player.location).full_description
     unless room_contents.empty?
-      room_contents.each {|item| puts find_item_in_dungeon(item).view_description unless find_item_in_dungeon(item) == nil }
-      room_contents.each {|item| puts find_room_object_in_dungeon(item).view_description unless find_room_object_in_dungeon(item) == nil}
+      room_contents.each do |element|
+        element.each do |object, type|
+          if type == :item
+            puts find_item_in_dungeon(object).view_description
+          end
+          if type == :room_object
+            puts find_room_object_in_dungeon(object).view_description
+          end
+        end
+      end
     end
   end
 
   def room_events
-    room_contents.each do |event|
-      unless find_event_in_dungeon(event) == nil
-        trigger(event)
+    room_contents.each do |element|
+      element.each do |object, type|
+        if type == :event
+          trigger(object)
+        end
       end
     end
   end
@@ -136,16 +146,34 @@ class Dungeon
   end
 
   def take_item
+    room_items = []
+    room_contents.each do |element|
+      element.each do |object, type|
+        if type == :item
+          room_items << object
+        end
+      end
+    end
+    if room_items.empty?
+      puts "There are no items you can take in here"
+      return
+    end
     puts "What item do you want to take?"
-    room_contents.each {|item| puts find_item_in_dungeon(item).name}
+    room_items.each {|item| puts find_item_in_dungeon(item).name}
     input = gets.chomp.downcase.tr(" ", "_").to_sym
-    chosen_item = room_contents.select { |e| e == input  }
+    chosen_item = room_items.select { |e| e == input  }
     if chosen_item.empty?
       puts "There are none of those in here"
     else
       puts "You grabbed the #{find_item_in_dungeon(chosen_item[0]).name}"
       @player.inventory << chosen_item[0]
-      room_contents.delete(chosen_item[0])
+      room_contents.each do |element|
+        element.each do |object, type|
+          if object == chosen_item[0]
+            element.delete(chosen_item[0])
+          end
+        end
+      end
     end
   end
 
@@ -154,18 +182,23 @@ class Dungeon
   end
 
   def use_item
-    contents = room_contents.each {|object| puts find_room_object_in_dungeon(object).name}
+    contents = []
+    room_contents.each do |element|
+      element.each do |object, type|
+        contents << object if type == :room_object
+      end
+    end
     if contents.empty?
       puts "There are no usuable items in here"
       return
+    end
     puts "What do you want to use?"
-    end 
+    contents.each {|object| puts find_room_object_in_dungeon(object).name }
     input = gets.chomp.downcase.tr(" ", "_").to_sym
-    chosen_item = room_contents.select { |object| object == input  }
+    chosen_item = contents.select { |object| object == input  }
     if chosen_item.empty?
       puts "There are none of those in here"
     else
-
       trigger(find_room_object_in_dungeon(chosen_item[0]).actions)
     end
   end
@@ -180,13 +213,13 @@ class Dungeon
     else
       puts "Dropped #{find_item_in_dungeon(chosen_item[0]).name}"
       @player.inventory.delete(chosen_item[0])
-      find_room_in_dungeon(@player.location).contents << chosen_item[0]
+      find_room_in_dungeon(@player.location).contents << {chosen_item[0] => :item}
     end
   end
 
   def add_item(reference, name, description, location)
     @items[reference] = Item.new(reference, name, description)
-    find_room_in_dungeon(location).contents << reference
+    find_room_in_dungeon(location).contents << {reference => :item}
   end
 
   def add_room(reference, name, description, connections)
@@ -195,14 +228,23 @@ class Dungeon
 
   def add_room_object(reference, name, description, location, actions)
     @room_objects[reference] = RoomObject.new(reference, name, description, location, actions)
-    find_room_in_dungeon(location).contents << reference
+    find_room_in_dungeon(location).contents << {reference => :room_object}
   end
 
   def add_event(name, location, description, block)
     @events[name] = Event.new(name, location, description, block)
     if find_room_in_dungeon(location)
-      find_room_in_dungeon(location).contents << name
-    end 
+      find_room_in_dungeon(location).contents << {name => :event}
+    end
+  end
+
+  def delete_room_object(reference, location)
+    @room_objects[reference]
+    find_room_in_dungeon(location).contents.each do |element|
+      element.each do |object, type|
+        element.delete(object)
+      end
+    end  
   end
 
   def add_flag(name, value)
@@ -274,7 +316,6 @@ end
 
 class RoomObject < Item
   attr_accessor :name, :location, :reference, :actions
- 
 
   def initialize(reference, name, description, location, actions)
     @reference = reference

@@ -2,9 +2,9 @@
 require 'pry'
 require_relative '../lib/dungeon_crawler.rb'
 
-
-
 puts 'Welcome to Dungeon Thyme'
+
+puts "Please Choose a dungeon to load"
 
 puts "\nWhat is your name?"
 input = gets.chomp
@@ -26,6 +26,7 @@ end
 
 rocks_opening = Proc.new do
   puts "There is a great rumbling sound behind you. Something huge must have shifted!"
+  my_dungeon.delete_room_object(:switch, :switch_room)
   my_dungeon.add_room_object(:switch, "Switch", "A rusty switch that has been engaged", :switch_room, :no_budge)
   my_dungeon.add_room(:largecave, "Large Cave", "a large cavernous cave. The rocks blocking the entrance are no more. You see an exit to the EAST. You see a point of light WEST of you. ", { :west => :smallcave, :east => :victory })
 end
